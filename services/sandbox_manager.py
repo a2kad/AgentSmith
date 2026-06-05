@@ -2,7 +2,8 @@ import asyncio
 import uuid
 from dataclasses import dataclass
 from typing import AsyncGenerator
-
+from fastapi import FastAPI, HTTPException
+import os
 
 @dataclass
 class ExecutionResult:
@@ -75,3 +76,22 @@ class SandboxManager:
 
     async def _extract_artifacts(self, sandbox_id: str) -> dict[str, str]:
         raise NotImplementedError
+
+
+app = FastAPI(title="Sandbox Manager")
+manager = _SandboxManager(
+    max_sandboxes=int(os.getenv("MAX_CONCURRENT_SANDBOXES", 5)),
+    timeout_sec=int(os.getenv("SANDBOX_TIMEOUT_SEC", 120))
+)
+
+@app.post("/execute")
+async def execute(code: str, language: str, task_id: str, working_dir: dict[str, str]):
+    try:
+        result = await manager.execute_code(code, language, task_id, working_dir)
+        return result.__dict__
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health():
+    return {"status": "ready"}

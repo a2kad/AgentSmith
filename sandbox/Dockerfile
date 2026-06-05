@@ -2,6 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y \
+    firecracker \
+    iproute2 \
+    qemu-kvm \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
-CMD ["python", "manager.py"]
+RUN pip install --no-cache-dir \
+    fastapi uvicorn \
+    asyncio-contextmanager
+
+EXPOSE 8002
+
+CMD ["python", "-m", "uvicorn", "services.sandbox_manager:app", "--host", "0.0.0.0", "--port", "8002"]
