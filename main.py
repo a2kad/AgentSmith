@@ -3,30 +3,30 @@ from typing import TypedDict
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 
-# 1. Определяем состояние графа (State)
+# 1. Define the graph state (State)
 class AgentState(TypedDict):
     task: str
     draft: str
     feedback: str
 
-# Подключаемся к локальной Ollama (имя хоста 'ollama' берется из docker-compose)
+# Connect to the local Ollama instance (the host name 'ollama' comes from docker-compose)
 llm = ChatOllama(model="gemma2:2b", base_url="http://ollama:11434", temperature=0.2)
 
-# 2. Узел: Генератор
+# 2. Node: Generator
 def generator_node(state: AgentState):
-    print("-> [Generator] Пишу черновик...")
+    print("-> [Generator] Writing a draft...")
     prompt = f"Write a short, professional response about: {state['task']}. Be very brief."
     response = llm.invoke(prompt)
     return {"draft": response.content}
 
-# 3. Узел: Рецензент
+# 3. Node: Reviewer
 def reviewer_node(state: AgentState):
-    print("-> [Reviewer] Анализирую черновик...")
+    print("-> [Reviewer] Reviewing the draft...")
     prompt = f"Review this text and provide exactly one sentence of harsh critique: {state['draft']}"
     response = llm.invoke(prompt)
     return {"feedback": response.content}
 
-# 4. Сборка графа (Graph Compilation)
+# 4. Graph compilation
 workflow = StateGraph(AgentState)
 workflow.add_node("generator", generator_node)
 workflow.add_node("reviewer", reviewer_node)
@@ -37,16 +37,16 @@ workflow.add_edge("reviewer", END)
 
 app = workflow.compile()
 
-# 5. Запуск (Execution)
+# 5. Execution
 if __name__ == "__main__":
-    print("Ожидание запуска Ollama (10 сек)...")
-    time.sleep(10) # Даем Ollama время на старт
+    print("Waiting for Ollama to start (10 sec)...")
+    time.sleep(10)  # Give Ollama time to start
     
     initial_state = {"task": "The importance of ruthlessness in IT architecture"}
-    print(f"\nЗадача: {initial_state['task']}\n" + "-"*40)
+    print(f"\nTask: {initial_state['task']}\n" + "-"*40)
     
     result = app.invoke(initial_state)
     
-    print("\n[РЕЗУЛЬТАТЫ]")
-    print(f"Черновик:\n{result['draft']}\n")
-    print(f"Критика:\n{result['feedback']}")
+    print("\n[RESULTS]")
+    print(f"Draft:\n{result['draft']}\n")
+    print(f"Criticism:\n{result['feedback']}")

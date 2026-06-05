@@ -12,8 +12,8 @@ services:
     container_name: local_orchestrator
     depends_on:
       - ollama
-    # Мы не запускаем скрипт сразу, а держим контейнер живым для ручного теста
-    command: ["tail", "-f", "/dev/null"] 
+    # Keep the container alive so the script can be run manually
+    command: ["tail", "-f", "/dev/null"]
 
 volumes:
   ollama_data:
